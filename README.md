@@ -1,4 +1,4 @@
-All the bloom filter I could find relied on C code that didn't have a compilation script (or binaries) for windows.
+All the bloom filter implementations that I could find relied on C code that didn't have a compilation script (or binaries) for windows.
 
 This is a simple, all-python implementation of a bloom filter.
 
