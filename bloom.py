@@ -1,34 +1,17 @@
 # Daniel Rodgers-Pryor, 16/8/2013
 
 ###
-# I had to build my own bloom filter because the ones I could find used C code that wouldn't compile in windows. Feel free to extend it.
+# I had to build my own bloom filter because the ones I could find used C code that wouldn't compile in windows.
 ###
 
 from bitarray import bitarray
 from sklearn.utils import murmurhash3_32
 from math import log, ceil
 
-base_hash = lambda x: murmurhash3_32(x, seed = 7) # Note: might return a negative int
+base_hash = lambda x: murmurhash3_32(x, seed = 0) # Note: might return a negative int
 # If you don't have scikit.learn feel free to comment this out and add your
 # own hash function here; just make sure that it has appropriate uniformity and speed.
 # The fnv hash would be another good choice
-
-def make_hash_function(i, m):
-    '''
-        i must be an integer in [0, k) (where you want k total hash functions).
-        m is the size of the array to be indexed (ie. the number of indexes that the
-        hash function should address).
-
-        Output will be an int in [0, m)
-        
-        See A. Kirsch, M Mitzenmacher 'Less Hashing, Same Performance'
-    '''
-    def hash_func(x):
-        h1 = base_hash(x)
-        h2 = base_hash(h1)
-        return abs(h1 + i*h2) % m
-    
-    return hash_func
 
 class BloomFilter:
     def __init__(self, iterable = (), max_entries = None, false_positive_rate = 0.01):
@@ -52,16 +35,24 @@ class BloomFilter:
         self.array = bitarray(self.m)
         self.array.setall(False)
 
-        self.hashes = tuple(make_hash_function(i, self.m) for i in xrange(self.k))
-
         self.update(iterable)
 
+    def hashes(self, key):
+        '''
+            Output will be an iterator of ints in [0, m)
+            
+            See A. Kirsch, M Mitzenmacher 'Less Hashing, Same Performance' for details on this fast, uniform hash set
+        '''
+        h1 = base_hash(key)
+        h2 = base_hash(h1)
+        return (abs(h1 + i*h2) % self.m for i in xrange(self.k))
+
     def append(self, key):
-        for i in (h(key) for h in self.hashes):
+        for i in self.hashes(key):
             self.array[i] = 1
 
     def __contains__(self, key):
-        return all(self.array[h(key)] for h in self.hashes)
+        return all(self.array[i] for i in self.hashes(key))
         
     def update(self, iterable):
         for i in iterable:
@@ -75,9 +66,6 @@ if __name__ == '__main__': # Module Tests
         
     print 'Plotting historam of hashes to show uniformity...'
     import matplotlib.pyplot as plt
-    hashes = [make_hash_function(i, 100) for i in xrange(20)]
-    a = []
-    for h in hashes:
-            a += [h(i) for i in xrange(10000)]
-    plt.hist(a, normed = True, bins = 100)
+    a = sum((list(b.hashes(i)) for i in xrange(10000)), [])
+    plt.hist(a, normed = True, bins = 100, range = (0, 1000))
     plt.show()
