@@ -38,6 +38,7 @@ class BloomFilter:
             longer apply). If you wish to add objects later, specify a suitable max_entries value.
         '''
         if not max_entries: max_entries = len(iterable)
+        max_entries = max(max_entries, 2) # Length 0 or 1 filters are pointless (length 0 filters break some of the maths)
         
         lg_2 = log(2)
         self.n = max_entries
