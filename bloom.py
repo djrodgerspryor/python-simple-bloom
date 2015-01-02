@@ -6,7 +6,7 @@
 
 from bitarray import bitarray
 from sklearn.utils import murmurhash3_32
-from math import log, ceil
+from math import log, ceil, floor
 
 base_hash = lambda x: murmurhash3_32(x, seed = 0) # Note: might return a negative int
 # If you don't have scikit.learn feel free to comment this out and add your
@@ -36,6 +36,9 @@ class BloomFilter:
         self.array.setall(False)
 
         self.update(iterable)
+
+    def capacity(self):
+        return int(floor(-self.m * (log(2)**2) / log(self.p)))
 
     def hashes(self, key):
         '''
